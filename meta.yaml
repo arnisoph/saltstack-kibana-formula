@@ -1,0 +1,22 @@
+name: saltstack-kibana-formula
+source: https://github.com/bechtoldt/saltstack-kibana-formula
+summary: SaltStack formula to set up and configure Kibana, a data visualization platform
+todo:
+  - add instructions how to use formhelper, add information about it in the formula-docs (dependency), show up alternative?
+  - 'table/ matrix: os/salt compatibility (dedicated file)'
+  - add list of available states
+  - add tests
+extra:
+  recommended_formulas:
+    - descr: Elasticsearch management
+      name: saltstack-elasticsearch-formula
+      url: https://github.com/bechtoldt/saltstack-elasticsearch-formula
+    - descr: Java deployment
+      name: saltstack-java-formula
+      url: https://github.com/bechtoldt/saltstack-java-formula
+    - descr: sysctl configuration
+      name: saltstack-sysctl-formula
+      url: https://github.com/bechtoldt/saltstack-sysctl-formula
+    - descr: repo management
+      name: saltstack-repos-formula
+      url: https://github.com/bechtoldt/saltstack-repos-formula
