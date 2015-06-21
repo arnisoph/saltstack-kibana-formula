@@ -65,6 +65,9 @@ TODO
 * table/ matrix: os/salt compatibility (dedicated file)
 * add list of available states
 * add tests
+* manage kibana service
+* integrate with apache httpd/ nginx?
+* manage kibana config files
 
 
 Authors
