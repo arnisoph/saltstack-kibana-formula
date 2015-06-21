@@ -1,83 +1,55 @@
 #!jinja|yaml
 
-{% set datamap = salt['formhelper.get_defaults']('kibana', saltenv, ['yaml'])['yaml'] %}
+{% set datamap = salt['formhelper.get_defaults']('kibana', saltenv) %}
 
 # SLS includes/ excludes
 include: {{ datamap.sls_include|default([]) }}
 extend: {{ datamap.sls_extend|default({}) }}
 
-kibana:
-  pkg:
-    - installed
-    - pkgs: {{ datamap.pkgs|default({}) }}
-  service:
-    - {{ datamap.service.ensure|default('running') }}
-    - name: {{ datamap.service.name|default('kibana') }}
-    - enable: {{ datamap.service.enable|default(True) }}
-
-{% if 'defaults_file' in datamap.config.manage|default([]) %}
-  {% set f = datamap.config.defaults_file %}
-kibana_defaults_file:
+{% if 'docroot_basedir' in datamap.config %}
+  {% set f = datamap['config']['docroot_basedir'] %}
+kibana_docroot_basedir:
   file:
-    - managed
+    - directory
     - name: {{ f.path }}
-    - source: {{ f.template_path|default('salt://kibana/files/defaults_file.' ~ salt['grains.get']('oscodename')) }}
-    - mode: {{ f.mode|default(644) }}
-    - user: {{ f.user|default('root') }}
-    - group: {{ f.group|default('root') }}
-    - template: jinja
-    - context:
-      datamap: {{ datamap|json }}
-    - watch_in:
-      - service: kibana
+    - user: {{ datamap.user.name|default(f.user) }}
+    - group: {{ datamap.group.name|default(f.group) }}
+    - mode: {{ f.mode|default(755) }}
 {% endif %}
 
-{% if 'main' in datamap.config.manage|default([]) %}
-  {% set f = datamap.config.main %}
-kibana_config_main:
+{% for id, instance in datamap.instances|default({})|dictsort %}
+kibana_instance_{{ id }}_dir:
   file:
-    - managed
-    - name: {{ f.path|default('/etc/kibana/kibana.yml') }}
-    - source: {{ f.template_path|default('salt://kibana/files/main') }}
-    - mode: {{ f.mode|default(644) }}
-    - user: {{ f.user|default('root') }}
-    - group: {{ f.group|default('root') }}
-    - template: jinja
-    - context:
-      datamap: {{ datamap|json }}
-    - watch_in:
-      - service: kibana
-{% endif %}
+    - directory
+    - name: {{ datamap.config.docroot_basedir.path }}/{{ id }}
+    - user: {{ datamap.user.name }}
+    - group: {{ datamap.group.name }}
+    - mode: {{ f.mode|default(755) }}
+    - recurse:
+      - user
+      - group
 
-{% if 'logging' in datamap.config.manage|default([]) %}
-  {% set f = datamap.config.logging %}
-kibana_config_logging:
+  {% for v_id, version in instance.versions|default({})|dictsort %}
+kibana_instance_{{ id }}:
+  archive:
+    - extracted
+    - name: {{ datamap.config.docroot_basedir.path }}/{{ id }}
+    - source: {{ version.source }}
+    - source_hash: {{ version.source_checksum }}
+    - keep: True
+    - archive_format: {{ version.source_archive_format|default('tar') }}
+    - if_missing: {{ datamap.config.docroot_basedir.path }}/{{ id }}/{{ version.version|default(v_id) }}
+    - require_in:
+      - file: kibana_instance_{{ id }}_dir
+  {% endfor %}
+
+  {% if 'current_ver' in instance %}
+kibana_instance_{{ id }}_current_ver:
   file:
-    - managed
-    - name: {{ f.path|default('/etc/kibana/logging.yml') }}
-    - source: {{ f.template_path|default('salt://kibana/files/logging') }}
-    - mode: {{ f.mode|default(644) }}
-    - user: {{ f.user|default('root') }}
-    - group: {{ f.group|default('root') }}
-    - template: jinja
-    - context:
-      datamap: {{ datamap|json }}
-    - watch_in:
-      - service: kibana
-{% endif %}
-
-{% for p in datamap.plugins|default([]) %}
-  {% set java_home = datamap.defaults.JAVA_HOME|default(false) %}
-  {% if 'url' in p %}
-    {% set url = '--url \'' ~ p.url ~ '\'' %}
-  {% else %}
-    {% set url = '' %}
+    - symlink
+    - name: {{ datamap.config.docroot_basedir.path }}/{{ id }}/current
+    - target: {{ datamap.config.docroot_basedir.path }}/{{ id }}/{{ instance.current_ver }}
+    - user: {{ datamap.user.name }}
+    - group: {{ datamap.group.name }}
   {% endif %}
-
-kibana_install_plugin_{{ p.name }}:
-  cmd:
-    - run
-    - name: {% if java_home %}export JAVA_HOME='{{ java_home }}' && {% endif %}{{ datamap.basepath|default('/usr/share/kibana') }}/bin/plugin -v -t 30s {{ url }} install '{{ p.name }}'
-    - unless: test -d '{{ datamap.basepath|default('/usr/share/kibana') }}/plugins/{{ p.installed_name }}'
 {% endfor %}
-

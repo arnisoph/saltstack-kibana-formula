@@ -1,22 +1,13 @@
 kernel:
   Linux:
-    pkgs:
-      - kibana
+    user:
+      name: root
+    group:
+      name: root
     config:
+      manage:
+        - docroot
       main: {}
       logging: {}
-    service: {}
-os_family:
-  Debian:
-    config:
-      manage:
-        - defaults_file
-        - main
-      defaults_file:
-        path: /etc/default/elasticsearch
-  RedHat:
-    config:
-      manage:
-        - main
-      defaults_file:
-        path: /etc/sysconfig/elasticsearch
+      docroot_basedir:
+        path: /var/www
