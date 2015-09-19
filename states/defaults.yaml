@@ -11,3 +11,14 @@ kernel:
       logging: {}
       docroot_basedir:
         path: /var/www
+    service:
+      name: kibana
+      manage: False
+      script:
+        manage: False
+os_family:
+  Debian:
+    service:
+      manage: True
+      script:
+        manage: True

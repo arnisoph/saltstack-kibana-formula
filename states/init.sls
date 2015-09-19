@@ -53,3 +53,23 @@ kibana_instance_{{ id }}_current_ver:
     - group: {{ datamap.group.name }}
   {% endif %}
 {% endfor %}
+
+{% if datamap.service.manage|default(False) %}
+  {% if datamap.service.script.manage|default(False) %}
+kibana_init_script:
+  file:
+    - managed
+    - name: {{ datamap.service.script.path|default('/etc/init.d/kibana') }}
+    - source: {{ datamap.service.script.template_path|default('salt://kibana/files/init.' ~ salt['grains.get']('os_family') ~ '.kibana') }}
+    - user: {{ datamap.user.name }}
+    - group: {{ datamap.group.name }}
+    - mode: {{ f.mode|default(755) }}
+    - template: jinja
+  {% endif %}
+
+kibana_service:
+  service:
+    - running
+    - name: {{ datamap.service.name }}
+    - enable: True
+{% endif %}
